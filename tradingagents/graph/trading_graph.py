@@ -6,10 +6,19 @@ import json
 from datetime import date
 from typing import Dict, Any, Tuple, List, Optional
 
-from langchain_deepseek import ChatDeepSeek
+try:
+    from langchain_deepseek import ChatDeepSeek
+except (ImportError, PermissionError, OSError) as e:
+    # Handle import errors including permission issues with torch
+    ChatDeepSeek = None
+    import warnings
+    warnings.warn(f"Could not import langchain_deepseek: {e}. DeepSeek provider will not be available.")
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
 
 from langgraph.prebuilt import ToolNode
 
@@ -73,16 +82,19 @@ class TradingAgentsGraph:
         )
 
         # Initialize LLMs
-        if self.config["llm_provider"].lower() in ["openai", "ollama", "openrouter"]:
-            self.deep_thinking_llm = ChatOpenAI(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
-            self.quick_thinking_llm = ChatOpenAI(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
-        elif self.config["llm_provider"].lower() == 'deepseek':
-            self.deep_thinking_llm = ChatDeepSeek(model=self.config["deep_think_llm"])
-            self.quick_thinking_llm = ChatDeepSeek(model=self.config["quick_think_llm"])
+        if self.config["llm_provider"].lower() in ["openai", "ollama", "openrouter", "deepseek"]:
+            # DeepSeek uses OpenAI-compatible API, so use ChatOpenAI with DeepSeek endpoint
+            base_url = self.config.get("backend_url", "https://api.openai.com/v1")
+            if self.config["llm_provider"].lower() == "deepseek":
+                base_url = "https://api.deepseek.com/v1"
+            self.deep_thinking_llm = ChatOpenAI(model=self.config["deep_think_llm"], base_url=base_url)
+            self.quick_thinking_llm = ChatOpenAI(model=self.config["quick_think_llm"], base_url=base_url)
         elif self.config["llm_provider"].lower() == "anthropic":
             self.deep_thinking_llm = ChatAnthropic(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
             self.quick_thinking_llm = ChatAnthropic(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
         elif self.config["llm_provider"].lower() == "google":
+            if ChatGoogleGenerativeAI is None:
+                raise ValueError("Google provider requires langchain-google-genai package. Install it with: pip install langchain-google-genai")
             self.deep_thinking_llm = ChatGoogleGenerativeAI(model=self.config["deep_think_llm"])
             self.quick_thinking_llm = ChatGoogleGenerativeAI(model=self.config["quick_think_llm"])
         else:
