@@ -43,6 +43,10 @@ def generate_consolidated_report(ticker: str, trade_date: str, output_format: st
     config["max_debate_rounds"] = 1
     config["max_risk_discuss_rounds"] = 1
     
+    # Configure data vendors - use Yahoo Finance for company news, Google for global news
+    config["data_vendors"]["news_data"] = "yfinance"  # Use Yahoo Finance for company news
+    config["tool_vendors"]["get_global_news"] = "google"  # Use Google News for global/macro news (yfinance doesn't support this)
+    
     ta = TradingAgentsGraph(
         selected_analysts=["market", "news"],  # Adjust as needed
         debug=False,  # Set to False to avoid verbose output
