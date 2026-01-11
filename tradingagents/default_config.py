@@ -9,7 +9,7 @@ DEFAULT_CONFIG = {
         "dataflows/data_cache",
     ),
     # LLM settings
-    "llm_provider": "openai",
+    "llm_provider": "deepseek",
     "deep_think_llm": "deepseek-reasoner",
     "quick_think_llm": "deepseek-chat",
     "backend_url": "https://api.deepseek.com/v1",

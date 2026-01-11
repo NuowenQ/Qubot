@@ -85,10 +85,24 @@ class TradingAgentsGraph:
         if self.config["llm_provider"].lower() in ["openai", "ollama", "openrouter", "deepseek"]:
             # DeepSeek uses OpenAI-compatible API, so use ChatOpenAI with DeepSeek endpoint
             base_url = self.config.get("backend_url", "https://api.openai.com/v1")
+            api_key = None
+
             if self.config["llm_provider"].lower() == "deepseek":
                 base_url = "https://api.deepseek.com/v1"
-            self.deep_thinking_llm = ChatOpenAI(model=self.config["deep_think_llm"], base_url=base_url)
-            self.quick_thinking_llm = ChatOpenAI(model=self.config["quick_think_llm"], base_url=base_url)
+                api_key = os.getenv("DEEPSEEK_API_KEY")
+                if not api_key:
+                    raise ValueError("DEEPSEEK_API_KEY environment variable not set")
+
+            self.deep_thinking_llm = ChatOpenAI(
+                model=self.config["deep_think_llm"],
+                base_url=base_url,
+                api_key=api_key
+            )
+            self.quick_thinking_llm = ChatOpenAI(
+                model=self.config["quick_think_llm"],
+                base_url=base_url,
+                api_key=api_key
+            )
         elif self.config["llm_provider"].lower() == "anthropic":
             self.deep_thinking_llm = ChatAnthropic(model=self.config["deep_think_llm"], base_url=self.config["backend_url"])
             self.quick_thinking_llm = ChatAnthropic(model=self.config["quick_think_llm"], base_url=self.config["backend_url"])
@@ -247,8 +261,9 @@ class TradingAgentsGraph:
         with open(
             f"eval_results/{self.ticker}/TradingAgentsStrategy_logs/full_states_log_{trade_date}.json",
             "w",
+            encoding="utf-8",
         ) as f:
-            json.dump(self.log_states_dict, f, indent=4)
+            json.dump(self.log_states_dict, f, indent=4, ensure_ascii=False)
 
     def reflect_and_remember(self, returns_losses):
         """Reflect on decisions and update memory based on returns."""
