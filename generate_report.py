@@ -13,16 +13,29 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Verify API key is loaded (DeepSeek uses DEEPSEEK_API_KEY or OPENAI_API_KEY)
-# DeepSeek API is compatible with OpenAI, so it can use either
-api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("DEEPSEEK_API_KEY or OPENAI_API_KEY not found in environment. Please set it in .env file or export it.")
-print(f"✅ API key loaded (ends with: ...{api_key[-10:]})")
+# Determine which LLM provider to use (default: deepseek, can be overridden with GOOGLE_API_KEY)
+use_google = os.getenv("GOOGLE_API_KEY") is not None
+use_deepseek = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
 
-# Set the API key for DeepSeek (if using DEEPSEEK_API_KEY, also set OPENAI_API_KEY for compatibility)
-if os.getenv("DEEPSEEK_API_KEY") and not os.getenv("OPENAI_API_KEY"):
-    os.environ["OPENAI_API_KEY"] = os.getenv("DEEPSEEK_API_KEY")
+if use_google:
+    # Verify Google API key is loaded
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY not found in environment. Please set it in .env file or export it.")
+    print(f"✅ Google API key loaded (ends with: ...{api_key[-10:]})")
+    print(f"   Using provider: Google Gemini")
+elif use_deepseek:
+    # Verify DeepSeek API key is loaded (DeepSeek uses DEEPSEEK_API_KEY or OPENAI_API_KEY)
+    api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("DEEPSEEK_API_KEY or OPENAI_API_KEY not found in environment. Please set it in .env file or export it.")
+    print(f"✅ API key loaded (ends with: ...{api_key[-10:]})")
+    print(f"   Using provider: DeepSeek")
+    # Set the API key for DeepSeek (if using DEEPSEEK_API_KEY, also set OPENAI_API_KEY for compatibility)
+    if os.getenv("DEEPSEEK_API_KEY") and not os.getenv("OPENAI_API_KEY"):
+        os.environ["OPENAI_API_KEY"] = os.getenv("DEEPSEEK_API_KEY")
+else:
+    raise ValueError("No API key found. Please set GOOGLE_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY in environment.")
 
 
 def generate_consolidated_report(ticker: str, trade_date: str, output_format: str = "markdown"):
@@ -34,12 +47,31 @@ def generate_consolidated_report(ticker: str, trade_date: str, output_format: st
         trade_date: Trading date in YYYY-MM-DD format
         output_format: "markdown" or "txt" (default: "markdown")
     """
-    # Initialize TradingAgents with DeepSeek
+    # Initialize TradingAgents with Google Gemini or DeepSeek
     config = DEFAULT_CONFIG.copy()
-    config["llm_provider"] = "deepseek"  # Use DeepSeek
-    config["deep_think_llm"] = "deepseek-reasoner"  # DeepSeek reasoning model
-    config["quick_think_llm"] = "deepseek-chat"  # DeepSeek chat model
-    config["backend_url"] = "https://api.deepseek.com/v1"  # DeepSeek endpoint
+    
+    # Determine provider based on available API keys
+    use_google = os.getenv("GOOGLE_API_KEY") is not None
+    
+    if use_google:
+        # Configure for Google Gemini
+        config["llm_provider"] = "google"  # Use Google Gemini
+        config["deep_think_llm"] = "gemini-2.5-pro-preview-06-05"  # Gemini Pro for deep thinking
+        config["quick_think_llm"] = "gemini-2.0-flash"  # Gemini Flash for quick thinking
+        config["backend_url"] = "https://generativelanguage.googleapis.com/v1"  # Google endpoint
+        print("📊 Using Google Gemini models:")
+        print(f"   Deep Thinking: {config['deep_think_llm']}")
+        print(f"   Quick Thinking: {config['quick_think_llm']}")
+    else:
+        # Configure for DeepSeek (default)
+        config["llm_provider"] = "deepseek"  # Use DeepSeek
+        config["deep_think_llm"] = "deepseek-reasoner"  # DeepSeek reasoning model
+        config["quick_think_llm"] = "deepseek-chat"  # DeepSeek chat model
+        config["backend_url"] = "https://api.deepseek.com/v1"  # DeepSeek endpoint
+        print("📊 Using DeepSeek models:")
+        print(f"   Deep Thinking: {config['deep_think_llm']}")
+        print(f"   Quick Thinking: {config['quick_think_llm']}")
+    
     config["max_debate_rounds"] = 1
     config["max_risk_discuss_rounds"] = 1
     
@@ -48,7 +80,7 @@ def generate_consolidated_report(ticker: str, trade_date: str, output_format: st
     config["tool_vendors"]["get_global_news"] = "google"  # Use Google News for global/macro news (yfinance doesn't support this)
     
     ta = TradingAgentsGraph(
-        selected_analysts=["market", "news"],  # Adjust as needed
+        selected_analysts=["market", "social", "news", "fundamentals"],  # All 4 analysts
         debug=False,  # Set to False to avoid verbose output
         config=config
     )

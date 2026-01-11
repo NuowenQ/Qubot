@@ -26,4 +26,5 @@ langchain_anthropic
 langchain_deepseek
 langchain_google_genai
 openai
-sentence-transformers
+sentence-transformerstyper
+typer

@@ -383,6 +383,33 @@ def get_income_statement(
         return f"Error retrieving income statement for {ticker}: {str(e)}"
 
 
+def get_fundamentals(
+    ticker: Annotated[str, "ticker symbol of the company"],
+    curr_date: Annotated[str, "current date (not used for yfinance)"] = None
+):
+    """Get comprehensive fundamental data from yfinance by aggregating balance sheet, cash flow, and income statement."""
+    try:
+        # Aggregate balance sheet, cash flow, and income statement
+        balance_sheet = get_balance_sheet(ticker, freq="quarterly", curr_date=curr_date)
+        cashflow = get_cashflow(ticker, freq="quarterly", curr_date=curr_date)
+        income_stmt = get_income_statement(ticker, freq="quarterly", curr_date=curr_date)
+        
+        # Combine all fundamental data
+        result = f"# Comprehensive Fundamental Data for {ticker.upper()}\n"
+        result += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        result += "## Balance Sheet\n"
+        result += balance_sheet + "\n\n"
+        result += "## Cash Flow Statement\n"
+        result += cashflow + "\n\n"
+        result += "## Income Statement\n"
+        result += income_stmt
+        
+        return result
+        
+    except Exception as e:
+        return f"Error retrieving fundamentals for {ticker}: {str(e)}"
+
+
 def get_insider_transactions(
     ticker: Annotated[str, "ticker symbol of the company"]
 ):
