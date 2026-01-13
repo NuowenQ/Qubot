@@ -80,7 +80,7 @@ def generate_consolidated_report(ticker: str, trade_date: str, output_format: st
     config["tool_vendors"]["get_global_news"] = "google"  # Use Google News for global/macro news (yfinance doesn't support this)
     
     ta = TradingAgentsGraph(
-        selected_analysts=["market", "social", "news", "fundamentals"],  # All 4 analysts
+        selected_analysts=["market", "social", "news", "fundamentals", "alpha_factors"],  # All 5 analysts including alpha factors
         debug=False,  # Set to False to avoid verbose output
         config=config
     )
@@ -144,6 +144,14 @@ def generate_consolidated_report(ticker: str, trade_date: str, output_format: st
         report_lines.append("## Fundamentals Analysis")
         report_lines.append("")
         report_lines.append(final_state["fundamentals_report"])
+        report_lines.append("")
+        report_lines.append("---")
+        report_lines.append("")
+    
+    if final_state.get("alpha_factors_report"):
+        report_lines.append("## Alpha Factors Analysis")
+        report_lines.append("")
+        report_lines.append(final_state["alpha_factors_report"])
         report_lines.append("")
         report_lines.append("---")
         report_lines.append("")

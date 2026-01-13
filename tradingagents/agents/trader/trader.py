@@ -11,8 +11,9 @@ def create_trader(llm, memory):
         sentiment_report = state["sentiment_report"]
         news_report = state["news_report"]
         fundamentals_report = state["fundamentals_report"]
+        alpha_factors_report = state.get("alpha_factors_report", "")
 
-        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}\n\n{alpha_factors_report}"
         past_memories = memory.get_memories(curr_situation, n_matches=2)
 
         past_memory_str = ""
@@ -22,9 +23,13 @@ def create_trader(llm, memory):
         else:
             past_memory_str = "No past memories found."
 
+        alpha_factors_context = ""
+        if alpha_factors_report:
+            alpha_factors_context = f"\n\nAlpha Factors Analysis:\n{alpha_factors_report}\n\nPay special attention to the alpha factors analysis as it provides quantitative signals that can strongly support BUY, SELL, or HOLD decisions. Factor-based insights are critical for making data-driven trading decisions."
+        
         context = {
             "role": "user",
-            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
+            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, social media sentiment, and quantitative alpha factors. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}{alpha_factors_context}\n\nLeverage these insights to make an informed and strategic decision. Consider all three options (BUY, SELL, HOLD) equally based on the strength of evidence.",
         }
 
         messages = [

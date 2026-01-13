@@ -43,7 +43,8 @@ from tradingagents.agents.utils.agent_utils import (
     get_news,
     get_insider_sentiment,
     get_insider_transactions,
-    get_global_news
+    get_global_news,
+    get_alpha_factors
 )
 
 from .conditional_logic import ConditionalLogic
@@ -185,6 +186,12 @@ class TradingAgentsGraph:
                     get_income_statement,
                 ]
             ),
+            "alpha_factors": ToolNode(
+                [
+                    # Alpha factors calculation tool
+                    get_alpha_factors,
+                ]
+            ),
         }
 
     def propagate(self, company_name, trade_date):
@@ -231,6 +238,7 @@ class TradingAgentsGraph:
             "sentiment_report": final_state["sentiment_report"],
             "news_report": final_state["news_report"],
             "fundamentals_report": final_state["fundamentals_report"],
+            "alpha_factors_report": final_state.get("alpha_factors_report", ""),
             "investment_debate_state": {
                 "bull_history": final_state["investment_debate_state"]["bull_history"],
                 "bear_history": final_state["investment_debate_state"]["bear_history"],

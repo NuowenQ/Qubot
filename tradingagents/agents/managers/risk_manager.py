@@ -13,16 +13,17 @@ def create_risk_manager(llm, memory):
         news_report = state["news_report"]
         fundamentals_report = state["news_report"]
         sentiment_report = state["sentiment_report"]
+        alpha_factors_report = state.get("alpha_factors_report", "")
         trader_plan = state["investment_plan"]
 
-        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}\n\n{alpha_factors_report}"
         past_memories = memory.get_memories(curr_situation, n_matches=2)
 
         past_memory_str = ""
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Risky, Neutral, and Safe/Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Risky, Neutral, and Safe/Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Evaluate all three options equally—Buy when there are strong growth opportunities and positive indicators, Sell when risks outweigh potential gains, and Hold only when the evidence is truly balanced or uncertain. Do not default to any single option; make a decision based on the strongest evidence presented. Strive for clarity and decisiveness.
 
 Guidelines for Decision-Making:
 1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.

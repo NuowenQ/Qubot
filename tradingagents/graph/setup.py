@@ -38,7 +38,7 @@ class GraphSetup:
         self.conditional_logic = conditional_logic
 
     def setup_graph(
-        self, selected_analysts=["market", "social", "news", "fundamentals"]
+        self, selected_analysts=["market", "social", "news", "fundamentals", "alpha_factors"]
     ):
         """Set up and compile the agent workflow graph.
 
@@ -48,6 +48,7 @@ class GraphSetup:
                 - "social": Social media analyst
                 - "news": News analyst
                 - "fundamentals": Fundamentals analyst
+                - "alpha_factors": Alpha factors analyst
         """
         if len(selected_analysts) == 0:
             raise ValueError("Trading Agents Graph Setup Error: no analysts selected!")
@@ -85,6 +86,13 @@ class GraphSetup:
             delete_nodes["fundamentals"] = create_msg_delete()
             tool_nodes["fundamentals"] = self.tool_nodes["fundamentals"]
 
+        if "alpha_factors" in selected_analysts:
+            analyst_nodes["alpha_factors"] = create_alpha_factors_analyst(
+                self.quick_thinking_llm
+            )
+            delete_nodes["alpha_factors"] = create_msg_delete()
+            tool_nodes["alpha_factors"] = self.tool_nodes["alpha_factors"]
+
         # Create researcher and manager nodes
         bull_researcher_node = create_bull_researcher(
             self.quick_thinking_llm, self.bull_memory
@@ -110,10 +118,16 @@ class GraphSetup:
 
         # Add analyst nodes to the graph
         for analyst_type, node in analyst_nodes.items():
-            workflow.add_node(f"{analyst_type.capitalize()} Analyst", node)
-            workflow.add_node(
-                f"Msg Clear {analyst_type.capitalize()}", delete_nodes[analyst_type]
-            )
+            # Handle special case for alpha_factors (should be "Alpha_factors" not "Alpha_factors")
+            if analyst_type == "alpha_factors":
+                node_name = "Alpha_factors Analyst"
+                clear_name = "Msg Clear Alpha_factors"
+            else:
+                node_name = f"{analyst_type.capitalize()} Analyst"
+                clear_name = f"Msg Clear {analyst_type.capitalize()}"
+            
+            workflow.add_node(node_name, node)
+            workflow.add_node(clear_name, delete_nodes[analyst_type])
             workflow.add_node(f"tools_{analyst_type}", tool_nodes[analyst_type])
 
         # Add other nodes
@@ -128,26 +142,48 @@ class GraphSetup:
 
         # Define edges
         # Start with the first analyst
-        first_analyst = selected_analysts[0]
-        workflow.add_edge(START, f"{first_analyst.capitalize()} Analyst")
+        first_analyst_type = selected_analysts[0]
+        if first_analyst_type == "alpha_factors":
+            first_analyst = "Alpha_factors Analyst"
+        else:
+            first_analyst = f"{first_analyst_type.capitalize()} Analyst"
+        workflow.add_edge(START, first_analyst)
 
         # Connect analysts in sequence
         for i, analyst_type in enumerate(selected_analysts):
-            current_analyst = f"{analyst_type.capitalize()} Analyst"
+            # Handle special case for alpha_factors
+            if analyst_type == "alpha_factors":
+                current_analyst = "Alpha_factors Analyst"
+                current_clear = "Msg Clear Alpha_factors"
+            else:
+                current_analyst = f"{analyst_type.capitalize()} Analyst"
+                current_clear = f"Msg Clear {analyst_type.capitalize()}"
+            
             current_tools = f"tools_{analyst_type}"
-            current_clear = f"Msg Clear {analyst_type.capitalize()}"
 
             # Add conditional edges for current analyst
-            workflow.add_conditional_edges(
-                current_analyst,
-                getattr(self.conditional_logic, f"should_continue_{analyst_type}"),
-                [current_tools, current_clear],
-            )
+            # Handle alpha_factors special case (has underscore)
+            if analyst_type == "alpha_factors":
+                workflow.add_conditional_edges(
+                    current_analyst,
+                    self.conditional_logic.should_continue_alpha_factors,
+                    [current_tools, current_clear],
+                )
+            else:
+                workflow.add_conditional_edges(
+                    current_analyst,
+                    getattr(self.conditional_logic, f"should_continue_{analyst_type}"),
+                    [current_tools, current_clear],
+                )
             workflow.add_edge(current_tools, current_analyst)
 
             # Connect to next analyst or to Bull Researcher if this is the last analyst
             if i < len(selected_analysts) - 1:
-                next_analyst = f"{selected_analysts[i+1].capitalize()} Analyst"
+                next_analyst_type = selected_analysts[i+1]
+                if next_analyst_type == "alpha_factors":
+                    next_analyst = "Alpha_factors Analyst"
+                else:
+                    next_analyst = f"{next_analyst_type.capitalize()} Analyst"
                 workflow.add_edge(current_clear, next_analyst)
             else:
                 workflow.add_edge(current_clear, "Bull Researcher")
