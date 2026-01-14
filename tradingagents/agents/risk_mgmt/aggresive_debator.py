@@ -18,7 +18,15 @@ def create_risky_debator(llm):
 
         trader_decision = state["trader_investment_plan"]
 
-        prompt = f"""As the Risky Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
+        prompt = f"""As the Risky Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk.
+
+CRITICAL NEW REQUIREMENT - Think Probabilistically:
+- Calculate Expected Value (EV): (Probability of Upside × Gain) - (Probability of Downside × Loss)
+- Identify asymmetric payoffs where upside significantly exceeds downside (e.g., 3:1 risk/reward)
+- Quantify opportunity cost: What returns are we missing by waiting or being too cautious?
+- Use specific probability estimates, not just narrative arguments (e.g., "60% chance of 20% upside vs 30% chance of 8% downside = +8.6% EV")
+
+Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Show quantitatively when their feared downside scenarios are lower probability than they suggest. Here is the trader's decision:
 
 {trader_decision}
 

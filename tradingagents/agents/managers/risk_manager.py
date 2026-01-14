@@ -22,17 +22,36 @@ def create_risk_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Risky, Neutral, and Safe/Conservative—and determine the best course of action for the trader. Your decision must result in a clear recommendation: Buy, Sell, or Hold. Choose Hold only if strongly justified by specific arguments, not as a fallback when all sides seem valid. Strive for clarity and decisiveness.
+        prompt = f"""As the Risk Management Judge and Debate Facilitator, your goal is to evaluate the debate between three risk analysts—Risky, Neutral, and Safe/Conservative—and determine the best course of action for the trader.
+
+Your decision must be one of these 7 actions:
+1. STRONG_BUY - High conviction bullish entry
+2. BUY - Standard bullish entry
+3. HOLD_LONG - Maintain current position
+4. HOLD_CASH - Wait in cash for better opportunity
+5. REDUCE - Partial exit to manage risk
+6. SELL - Full exit of position
+7. SHORT - Enter bearish position
+
+CRITICAL: You must think probabilistically, not just narratively. For each potential action, estimate:
+- Upside probability and magnitude (% gain if correct)
+- Downside probability and magnitude (% loss if wrong)
+- Expected value (EV) = (Upside% × UpsideGain) - (Downside% × DownsideLoss)
 
 Guidelines for Decision-Making:
-1. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context.
-2. **Provide Rationale**: Support your recommendation with direct quotes and counterarguments from the debate.
-3. **Refine the Trader's Plan**: Start with the trader's original plan, **{trader_plan}**, and adjust it based on the analysts' insights.
-4. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments and improve the decision you are making now to make sure you don't make a wrong BUY/SELL/HOLD call that loses money.
+1. **Calculate Expected Value**: Explicitly estimate probabilities and expected returns for BUY vs HOLD_CASH vs SELL scenarios
+2. **Summarize Key Arguments**: Extract the strongest points from each analyst, focusing on relevance to the context
+3. **Provide Rationale**: Support your recommendation with direct quotes, counterarguments, AND quantitative EV reasoning
+4. **Avoid Narrative Risk Overweighting**: Don't let vivid downside stories bias you - weigh them by actual probability
+5. **Refine the Trader's Plan**: Start with the trader's original plan, **{trader_plan}**, and adjust it based on the analysts' insights
+6. **Learn from Past Mistakes**: Use lessons from **{past_memory_str}** to address prior misjudgments. Pay special attention if past errors show a pattern of excessive caution or missed opportunities.
+
+IMPORTANT: Default to action (BUY/SELL/REDUCE) when EV is positive. Choose HOLD_CASH only when waiting has higher EV than entering. Don't confuse prudence with inaction.
 
 Deliverables:
-- A clear and actionable recommendation: Buy, Sell, or Hold.
-- Detailed reasoning anchored in the debate and past reflections.
+- EV calculation for top 2-3 action candidates (show your math)
+- A clear and actionable recommendation from the 7 actions above
+- Detailed reasoning anchored in the debate, EV analysis, and past reflections
 
 ---
 

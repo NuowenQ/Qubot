@@ -19,16 +19,33 @@ def create_research_manager(llm, memory):
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision from these 7 actions:
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+1. STRONG_BUY - High conviction bullish entry
+2. BUY - Standard bullish entry
+3. HOLD_LONG - Maintain current position
+4. HOLD_CASH - Wait in cash for better opportunity
+5. REDUCE - Partial exit to manage risk
+6. SELL - Full exit of position
+7. SHORT - Enter bearish position
+
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation must be clear and actionable.
+
+CRITICAL GUIDELINES:
+- **Don't default to HOLD_CASH or HOLD_LONG as a compromise** - choose the action with highest expected value
+- If the bull case has merit, specify BUY or STRONG_BUY (don't say "wait for pullback" - that's HOLD_CASH)
+- If the bear case wins, specify SELL, REDUCE, or SHORT (be explicit about the action)
+- HOLD_CASH means "actively waiting for a better entry" - it requires justification that waiting has positive EV vs entering now
+- Consider: What is the opportunity cost of waiting? Could the stock run away?
 
 Additionally, develop a detailed investment plan for the trader. This should include:
 
-Your Recommendation: A decisive stance supported by the most convincing arguments.
-Rationale: An explanation of why these arguments lead to your conclusion.
-Strategic Actions: Concrete steps for implementing the recommendation.
-Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
+Your Recommendation: One of the 7 actions above, supported by the most convincing arguments
+Rationale: Explain why these arguments lead to your conclusion, including expected value reasoning
+Strategic Actions: Concrete steps for implementing the recommendation
+Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Pay attention if your past errors show excessive caution or missed opportunities.
+
+Present your analysis conversationally, as if speaking naturally, without special formatting.
 
 Here are your past reflections on mistakes:
 \"{past_memory_str}\"
